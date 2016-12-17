@@ -2,7 +2,9 @@ FROM docker:1.13.0-rc3-dind
 
 ARG docker_storage_driver=overlay2
 
-ENV DOCKER_STORAGE_DRIVER=${docker-storage-driver}
+ENV DOCKER_STORAGE_DRIVER=$docker-storage-driver
+
+ENV DOCKER_TLS_VERIFY=1
 
 RUN apk add --no-cache git tmux py-pip apache2-utils vim build-base gettext-dev curl bash
 
@@ -33,7 +35,8 @@ WORKDIR /root
 # Remove IPv6 alias for localhost and start docker in the background ...
 CMD cat /etc/hosts >/etc/hosts.bak && \
     sed 's/^::1.*//' /etc/hosts.bak > /etc/hosts && \
-    dockerd -g /graph --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 \
+    dockerd --experimental -g /graph --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 \
+            --tlsverify --tlscacert=$HOME/.docker/ca.pem --tlscert=$HOME/.docker/server.pem --tlskey=$HOME/.docker/server-key.pem \
             --storage-driver=$DOCKER_STORAGE_DRIVER &>/docker.log & \
     while true ; do /bin/bash ; done
 # ... and then put a shell in the foreground, restarting it if it exits
