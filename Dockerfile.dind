@@ -1,10 +1,5 @@
 FROM docker:1.13.0-rc3-dind
 
-ARG docker_storage_driver=overlay2
-
-ENV DOCKER_STORAGE_DRIVER=$docker-storage-driver
-
-ENV DOCKER_TLS_VERIFY=1
 
 RUN apk add --no-cache git tmux py-pip apache2-utils vim build-base gettext-dev curl bash
 
@@ -29,13 +24,19 @@ RUN rm /sbin/modprobe && echo '#!/bin/true' >/sbin/modprobe && chmod +x /sbin/mo
 COPY ["docker-prompt","/usr/local/bin/"]
 COPY [".vimrc",".bashrc", ".inputrc", "./root/"]
 
+ARG docker_storage_driver=overlay2
+
+ENV DOCKER_STORAGE_DRIVER=$docker_storage_driver
+
+ENV DOCKER_TLS_VERIFY=1
+
 # Move to our home
 WORKDIR /root
 
 # Remove IPv6 alias for localhost and start docker in the background ...
 CMD cat /etc/hosts >/etc/hosts.bak && \
     sed 's/^::1.*//' /etc/hosts.bak > /etc/hosts && \
-    dockerd --experimental -g /graph --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 \
+    dockerd --experimental -g /graph --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2376 \
             --tlsverify --tlscacert=$HOME/.docker/ca.pem --tlscert=$HOME/.docker/server.pem --tlskey=$HOME/.docker/server-key.pem \
             --storage-driver=$DOCKER_STORAGE_DRIVER &>/docker.log & \
     while true ; do /bin/bash ; done
